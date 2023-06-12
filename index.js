@@ -45,6 +45,38 @@ async function run() {
 
     const usersCollection = client.db("melody-master").collection("users");
 
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== 'admin') {
+        return res.status(403).send({ error: true, message: 'forbidden message' });
+      }
+      next();
+    }
+
+    const verifyInstructor = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== 'instructor') {
+        return res.status(403).send({ error: true, message: 'forbidden message' });
+      }
+      next();
+    }
+
+    const verifyStudent = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== 'student') {
+        return res.status(403).send({ error: true, message: 'forbidden message' });
+      }
+      next();
+    }
+
+
+
     app.post('/users', async (req, res) => {
       const user = req.body;
       const query = { email: user.email }
@@ -58,7 +90,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/users', async (req, res) => {
+    app.get('/users', verifyJWT, async (req, res) => {
       const cursor = usersCollection.find({});
       const users = await cursor.toArray();
       res.send(users);
