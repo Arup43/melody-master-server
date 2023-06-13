@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config()
 const port = process.env.PORT || 5000;
 const jwt = require('jsonwebtoken');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 app.use(cors());
 app.use(express.json());
@@ -46,6 +47,8 @@ async function run() {
     const usersCollection = client.db("melody-master").collection("users");
     const classesCollection = client.db("melody-master").collection("classes");
     const selectedClassesCollection = client.db("melody-master").collection("selectedClasses");
+    const paymentCollection = client.db("melody-master").collection("payment");
+    const enrolledClassesCollection = client.db("melody-master").collection("enrolledClasses");
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
@@ -207,6 +210,59 @@ async function run() {
       const result = await selectedClassesCollection.deleteOne(query);
       res.send(result);
     });
+
+    app.get('/selected-classes/:id', verifyJWT, verifyStudent, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const selectedClass = await selectedClassesCollection.findOne(query);
+      res.send(selectedClass);
+    });
+
+    app.post("/create-payment-intent", verifyJWT, verifyStudent, async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    app.post('/payments', verifyJWT, verifyStudent, async (req, res) => {
+      const payment = req.body;
+      const { selectedClassId, classId } = payment;
+      const insertResult = await paymentCollection.insertOne(payment);
+
+      const deleteQuery = { _id: new ObjectId(selectedClassId) };
+      const deleteResult = await selectedClassesCollection.deleteOne(deleteQuery);
+
+      const saveEnrolledClass = {
+        email: req.decoded.email,
+        classId: classId,
+        name: payment.className,
+        price: payment.price,
+        image: payment.image,
+        instructor: payment.instructor,
+      }
+      const enrolledClassResult = await enrolledClassesCollection.insertOne(saveEnrolledClass);
+
+      // update class's available seats using $inc operator
+      const updateQuery = { _id: new ObjectId(classId) };
+      const updateClass = {
+        $inc: { availableSeats: -1 }
+      };
+      const updateResult = await classesCollection.updateOne(updateQuery, updateClass);
+
+      res.send({ insertResult, deleteResult, enrolledClassResult, updateResult });
+    })
+
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
