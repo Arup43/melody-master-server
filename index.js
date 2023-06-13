@@ -204,6 +204,21 @@ async function run() {
       res.send(classes);
     });
 
+    app.get('/enrolled-classes', verifyJWT, verifyStudent, async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ error: true, message: 'forbidden access' })
+      }
+      const query = { email: email };
+      const cursor = enrolledClassesCollection.find(query);
+      const classes = await cursor.toArray();
+      res.send(classes);
+    });
+
     app.delete('/selected-classes/:id', verifyJWT, verifyStudent, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
