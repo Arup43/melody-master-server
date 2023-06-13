@@ -45,6 +45,7 @@ async function run() {
 
     const usersCollection = client.db("melody-master").collection("users");
     const classesCollection = client.db("melody-master").collection("classes");
+    const selectedClassesCollection = client.db("melody-master").collection("selectedClasses");
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
@@ -170,6 +171,19 @@ async function run() {
       const cursor = usersCollection.find(query);
       const instructors = await cursor.toArray();
       res.send(instructors);
+    });
+
+    app.get('/classes', async (req, res) => {
+      const query = { status: 'approved' }
+      const cursor = classesCollection.find(query);
+      const classes = await cursor.toArray();
+      res.send(classes);
+    });
+
+    app.post('/selected-classes', verifyJWT, verifyStudent, async (req, res) => {
+      const selectedClass = req.body;
+      const result = await selectedClassesCollection.insertOne(selectedClass);
+      res.send(result);
     });
 
 
