@@ -82,6 +82,21 @@ async function run() {
       res.send(result);
     });
 
+    app.get('/my-classes', verifyJWT, verifyInstructor, async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ error: true, message: 'forbidden access' })
+      }
+      const query = { instructorEmail: email };
+      const cursor = classesCollection.find(query);
+      const classes = await cursor.toArray();
+      res.send(classes);
+    });
+
     app.post('/users', async (req, res) => {
       const user = req.body;
       const query = { email: user.email }
