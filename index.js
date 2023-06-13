@@ -252,7 +252,7 @@ async function run() {
     app.post('/payments', verifyJWT, verifyStudent, async (req, res) => {
       const payment = req.body;
       const { selectedClassId, classId } = payment;
-      const insertResult = await paymentCollection.insertOne(payment);
+      const insertResult = await paymentCollection.insertOne({ ...payment, date: new Date(payment.date) });
 
       const deleteQuery = { _id: new ObjectId(selectedClassId) };
       const deleteResult = await selectedClassesCollection.deleteOne(deleteQuery);
@@ -277,7 +277,20 @@ async function run() {
       res.send({ insertResult, deleteResult, enrolledClassResult, updateResult });
     })
 
-
+    app.get('/payments', verifyJWT, verifyStudent, async (req, res) => {
+      const email = req.query.email;
+      if (!email) {
+        res.send([]);
+      }
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res.status(403).send({ error: true, message: 'forbidden access' })
+      }
+      const query = { email: email };
+      const cursor = paymentCollection.find(query).sort({ date: -1 });
+      const payments = await cursor.toArray();
+      res.send(payments);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
