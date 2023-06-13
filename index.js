@@ -44,6 +44,7 @@ async function run() {
 
 
     const usersCollection = client.db("melody-master").collection("users");
+    const classesCollection = client.db("melody-master").collection("classes");
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
@@ -75,7 +76,11 @@ async function run() {
       next();
     }
 
-
+    app.post('/classes', verifyJWT, verifyInstructor, async (req, res) => {
+      const newClass = req.body;
+      const result = await classesCollection.insertOne(newClass);
+      res.send(result);
+    });
 
     app.post('/users', async (req, res) => {
       const user = req.body;
