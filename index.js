@@ -165,6 +165,13 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/instructors', async (req, res) => {
+      const query = { role: 'instructor' }
+      const cursor = usersCollection.find(query);
+      const instructors = await cursor.toArray();
+      res.send(instructors);
+    });
+
 
 
     // Send a ping to confirm a successful connection
