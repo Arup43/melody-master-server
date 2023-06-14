@@ -49,6 +49,7 @@ async function run() {
     const selectedClassesCollection = client.db("melody-master").collection("selectedClasses");
     const paymentCollection = client.db("melody-master").collection("payment");
     const enrolledClassesCollection = client.db("melody-master").collection("enrolledClasses");
+    const reviewCollection = client.db("melody-master").collection("reviews");
 
     const verifyAdmin = async (req, res, next) => {
       const email = req.decoded.email;
@@ -353,6 +354,12 @@ async function run() {
 
       const result = await classesCollection.updateOne(filter, updateDoc);
       res.send(result);
+    });
+
+    app.get('/reviews', async (req, res) => {
+      const cursor = reviewCollection.find({});
+      const reviews = await cursor.toArray();
+      res.send(reviews);
     });
 
     // Send a ping to confirm a successful connection
