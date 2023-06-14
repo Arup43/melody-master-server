@@ -114,11 +114,26 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/users', verifyJWT, async (req, res) => {
+    app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
       const cursor = usersCollection.find({});
       const users = await cursor.toArray();
       res.send(users);
     });
+
+    app.patch('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const {role} = req.body;
+      const updateDoc = {
+        $set: {
+          role: role
+        },
+      };
+
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    })
 
     app.post('/jwt', (req, res) => {
       const user = req.body;
@@ -270,7 +285,8 @@ async function run() {
       // update class's available seats using $inc operator
       const updateQuery = { _id: new ObjectId(classId) };
       const updateClass = {
-        $inc: { availableSeats: -1 }
+        $inc: { availableSeats: -1 },
+        $inc: { totalEnrolled: 1}
       };
       const updateResult = await classesCollection.updateOne(updateQuery, updateClass);
 
