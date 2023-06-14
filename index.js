@@ -198,6 +198,13 @@ async function run() {
       res.send(classes);
     });
 
+    app.get('/popular-classes', async (req, res) => {
+      const query = { status: 'approved' }
+      const cursor = classesCollection.find(query).sort({ totalEnrolled: -1 }).limit(6);
+      const classes = await cursor.toArray();
+      res.send(classes);
+    });
+
     app.get('/all-classes', verifyJWT, verifyAdmin, async (req, res) => {
       const cursor = classesCollection.find({});
       const classes = await cursor.toArray();
