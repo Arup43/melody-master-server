@@ -198,6 +198,26 @@ async function run() {
       res.send(classes);
     });
 
+    app.get('/all-classes', verifyJWT, verifyAdmin, async (req, res) => {
+      const cursor = classesCollection.find({});
+      const classes = await cursor.toArray();
+      res.send(classes);
+    });
+
+    app.patch('/all-classes/:id', verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const { status } = req.body;
+      const updateDoc = {
+        $set: {
+          status: status
+        },
+      };
+
+      const result = await classesCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
     app.post('/selected-classes', verifyJWT, verifyStudent, async (req, res) => {
       const selectedClass = req.body;
       const result = await selectedClassesCollection.insertOne(selectedClass);
