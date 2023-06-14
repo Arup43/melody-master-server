@@ -186,6 +186,12 @@ async function run() {
 
     app.get('/instructors', async (req, res) => {
       const query = { role: 'instructor' }
+      const {limit} = req.query;
+      if (limit) {
+        const cursor = usersCollection.find(query).limit(parseInt(limit));
+        const instructors = await cursor.toArray();
+        return res.send(instructors);
+      }
       const cursor = usersCollection.find(query);
       const instructors = await cursor.toArray();
       res.send(instructors);
